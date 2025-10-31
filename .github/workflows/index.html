@@ -73,10 +73,8 @@
 
         let snake, direction, food, score, alive, started = false;
 
-        const githubUser = "Matteo-Tomadini123";
-        const githubRepo = "snake-game";
-        const githubPath = "leaderboard.json";
-        const githubToken = "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"; // ⚠️ NON lasciare visibile in produzione
+        const leaderboardUrl = "https://matteo-tomadini123.github.io/snake-game/leaderboard.json";
+        const apiUrl = "https://matteo-tomadini123.vercel.app/api/updateLeaderboard";
 
         function initGame() {
             snake = [{x:10,y:10}];
@@ -155,26 +153,15 @@
         }
 
         async function fetchLeaderboard() {
-            const url = `https://raw.githubusercontent.com/${githubUser}/${githubRepo}/main/${githubPath}`;
-            const res = await fetch(url);
+            const res = await fetch(leaderboardUrl);
             return await res.json();
         }
-async function updateLeaderboard(data) {
-  await fetch('https://<TUO-PROGETTO>.vercel.app/api/updateLeaderboard', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ leaderboard: data })
-  });
-}
-       
 
+        async function updateLeaderboard(data) {
             await fetch(apiUrl, {
-                method: "PUT",
-                headers: {
-                    Authorization: `Bearer ${githubToken}`,
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify(payload)
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ leaderboard: data })
             });
         }
 
@@ -204,3 +191,4 @@ async function updateLeaderboard(data) {
     </script>
 </body>
 </html>
+``
