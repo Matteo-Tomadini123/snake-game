@@ -6,7 +6,7 @@ export default async function handler(req, res) {
   const { leaderboard } = req.body;
   const token = process.env.GITHUB_TOKEN; // Sicuro, non nel client
   const repo = 'Matteo-Tomadini123/snake-game';
-  const path = './api/leaderboard.json';
+  const path = '.github/workflows/api/leaderboard.json';
 
   const apiUrl = `https://api.github.com/repos/${repo}/contents/${path}`;
 
