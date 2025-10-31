@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Snake Game con Classifica</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            text-align: center;
+            background: linear-gradient(135deg, #1e1e2f, #2c2c54);
+            color: #fff;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            color: #00ff99;
+            text-shadow: 0 0 10px #00ff99;
+        }
+        canvas {
+            background: #000;
+            display: block;
+            margin: 20px auto;
+            border-radius: 12px;
+            box-shadow: 0 0 20px rgba(0,255,153,0.5);
+        }
+        #leaderboard {
+            margin-top: 20px;
+            background: rgba(255,255,255,0.05);
+            padding: 15px;
+            border-radius: 10px;
+            width: 300px;
+            margin-left: auto;
+            margin-right: auto;
+            text-align: left;
+        }
+        #leaderboard h3 {
+            color: #00ff99;
+            margin-bottom: 10px;
+        }
+        #leaderboard p {
+            margin: 5px 0;
+            font-size: 18px;
+        }
+        button {
+            padding: 12px 24px;
+            margin-top: 15px;
+            font-size: 18px;
+            background: #00ff99;
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        button:hover {
+            background: #00cc77;
+        }
+    </style>
+</head>
+<body>
+    <h1>Snake Game</h1>
+    <canvas id="gameCanvas" width="600" height="400"></canvas>
+    <div id="leaderboard"></div>
+    <button onclick="restartGame()">Gioca di nuovo</button>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const gridSize = 20;
+        const width = canvas.width / gridSize;
+        const height = canvas.height / gridSize;
+
+        let snake, direction, food, score, alive;
+
+        function initGame() {
+            snake = [{x:10,y:10}];
+            direction = "RIGHT";
+            food = { x: Math.floor(Math.random()*width), y: Math.floor(Math.random()*height) };
+            score = 0;
+            alive = true;
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowUp' && direction !== "DOWN") direction = "UP";
+            if (e.key === 'ArrowDown' && direction !== "UP") direction = "DOWN";
+            if (e.key === 'ArrowLeft' && direction !== "RIGHT") direction = "LEFT";
+            if (e.key === 'ArrowRight' && direction !== "LEFT") direction = "RIGHT";
+        });
+
+        function update() {
+            if (!alive) return;
+
+            let head = {...snake[0]};
+            if (direction === "UP") head.y--;
+            if (direction === "DOWN") head.y++;
+            if (direction === "LEFT") head.x--;
+            if (direction === "RIGHT") head.x++;
+
+            if (head.x < 0 || head.x >= width || head.y < 0 || head.y >= height) {
+                gameOver();
+                return;
+            }
+
+            if (snake.some(part => part.x === head.x && part.y === head.y)) {
+                gameOver();
+                return;
+            }
+
+            snake.unshift(head);
+
+            if (head.x === food.x && head.y === food.y) {
+                score++;
+                food = { x: Math.floor(Math.random()*width), y: Math.floor(Math.random()*height) };
+            } else {
+                snake.pop();
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+
+            // Food
+            ctx.fillStyle = "#ff3333";
+            ctx.shadowColor = "#ff3333";
+            ctx.shadowBlur = 10;
+            ctx.fillRect(food.x*gridSize, food.y*gridSize, gridSize-2, gridSize-2);
+            ctx.shadowBlur = 0;
+
+            // Snake with gradient
+            snake.forEach((part, index) => {
+                let gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+                gradient.addColorStop(0, "#00ff99");
+                gradient.addColorStop(1, "#00cc77");
+                ctx.fillStyle = gradient;
+                ctx.fillRect(part.x*gridSize, part.y*gridSize, gridSize-2, gridSize-2);
+            });
+
+            // Score
+            ctx.fillStyle = "#fff";
+            ctx.font = "20px Segoe UI";
+            ctx.fillText("Score: " + score, 10, 20);
+        }
+
+        function gameOver() {
+            alive = false;
+            let name = prompt("Game Over! Inserisci il tuo nome:");
+            if (name) {
+                saveScore(name, score);
+            }
+            showLeaderboard();
+        }
+
+        function saveScore(name, score) {
+            let leaderboard = JSON.parse(localStorage.getItem("leaderboard") || "[]");
+            leaderboard.push({ name, score });
+            leaderboard.sort((a,b) => b.score - a.score);
+            localStorage.setItem("leaderboard", JSON.stringify(leaderboard.slice(0,10)));
+        }
+
+        function showLeaderboard() {
+            let leaderboard = JSON.parse(localStorage.getItem("leaderboard") || "[]");
+            document.getElementById('leaderboard').innerHTML =
+                "<h3>Classifica</h3>" +
+                leaderboard.map(item => `<p>${item.name}: ${item.score}</p>`).join('');
+        }
+
+        function gameLoop() {
+            update();
+            draw();
+            if (alive) {
+                setTimeout(gameLoop, 150);
+            }
+        }
+
+        function restartGame() {
+            initGame();
+            gameLoop();
+        }
+
+        initGame();
+        gameLoop();
+        showLeaderboard();
+    </script>
+</body>
+</html>
