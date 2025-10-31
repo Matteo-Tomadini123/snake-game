@@ -12,24 +12,24 @@
             padding: 20px;
         }
         h1 {
-            font-size: 2.5em;
+            font-size: 3em;
             margin-bottom: 10px;
             color: #00ff99;
-            text-shadow: 0 0 10px #00ff99;
+            text-shadow: 0 0 15px #00ff99;
         }
         canvas {
             background: #000;
             display: block;
             margin: 20px auto;
             border-radius: 12px;
-            box-shadow: 0 0 20px rgba(0,255,153,0.5);
+            box-shadow: 0 0 30px rgba(0,255,153,0.7);
         }
         #leaderboard {
             margin-top: 20px;
-            background: rgba(255,255,255,0.05);
+            background: rgba(255,255,255,0.08);
             padding: 15px;
             border-radius: 10px;
-            width: 300px;
+            width: 350px;
             margin-left: auto;
             margin-right: auto;
             text-align: left;
@@ -37,15 +37,22 @@
         #leaderboard h3 {
             color: #00ff99;
             margin-bottom: 10px;
+            text-align: center;
         }
         #leaderboard p {
-            margin: 5px 0;
+            margin: 8px 0;
             font-size: 18px;
+            display: flex;
+            justify-content: space-between;
         }
-        button {
-            padding: 12px 24px;
-            margin-top: 15px;
-            font-size: 18px;
+        .pagination {
+            text-align: center;
+            margin-top: 10px;
+        }
+        .pagination button, button {
+            padding: 8px 16px;
+            margin: 5px;
+            font-size: 16px;
             background: #00ff99;
             color: #000;
             border: none;
@@ -53,7 +60,7 @@
             cursor: pointer;
             transition: 0.3s;
         }
-        button:hover {
+        .pagination button:hover, button:hover {
             background: #00cc77;
         }
     </style>
@@ -62,6 +69,7 @@
     <h1>Snake Game</h1>
     <canvas id="gameCanvas" width="600" height="400"></canvas>
     <div id="leaderboard"></div>
+    <div class="pagination"></div>
     <button onclick="restartGame()">Gioca di nuovo</button>
 
     <script>
@@ -71,22 +79,17 @@
         const width = canvas.width / gridSize;
         const height = canvas.height / gridSize;
 
-        let snake, direction, food, score, alive, started = false;
-
-        const leaderboardUrl = "https://raw.githubusercontent.com/Matteo-Tomadini123/snake-game/main/leaderboard.json";
-        const apiUrl = "https://matteo-tomadini123.vercel.app/api/updateLeaderboard";
+        let snake, direction, food, score, alive;
 
         function initGame() {
             snake = [{x:10,y:10}];
-            direction = null;
+            direction = "RIGHT";
             food = { x: Math.floor(Math.random()*width), y: Math.floor(Math.random()*height) };
             score = 0;
             alive = true;
-            started = false;
         }
 
         document.addEventListener('keydown', (e) => {
-            if (!started) started = true;
             if (e.key === 'ArrowUp' && direction !== "DOWN") direction = "UP";
             if (e.key === 'ArrowDown' && direction !== "UP") direction = "DOWN";
             if (e.key === 'ArrowLeft' && direction !== "RIGHT") direction = "LEFT";
@@ -94,8 +97,7 @@
         });
 
         function update() {
-            if (!alive || !started || !direction) return;
-
+            if (!alive) return;
             let head = {...snake[0]};
             if (direction === "UP") head.y--;
             if (direction === "DOWN") head.y++;
@@ -109,7 +111,6 @@
             }
 
             snake.unshift(head);
-
             if (head.x === food.x && head.y === food.y) {
                 score++;
                 food = { x: Math.floor(Math.random()*width), y: Math.floor(Math.random()*height) };
@@ -121,63 +122,61 @@
         function draw() {
             ctx.clearRect(0,0,canvas.width,canvas.height);
 
+            // Food
             ctx.fillStyle = "#ff3333";
             ctx.shadowColor = "#ff3333";
             ctx.shadowBlur = 10;
             ctx.fillRect(food.x*gridSize, food.y*gridSize, gridSize-2, gridSize-2);
             ctx.shadowBlur = 0;
 
-            snake.forEach((part) => {
-                let gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-                gradient.addColorStop(0, "#00ff99");
-                gradient.addColorStop(1, "#00cc77");
-                ctx.fillStyle = gradient;
+            // Snake
+            snake.forEach((part, index) => {
+                ctx.fillStyle = index === 0 ? "#00ff99" : "#00cc77";
                 ctx.fillRect(part.x*gridSize, part.y*gridSize, gridSize-2, gridSize-2);
             });
 
+            // Score
             ctx.fillStyle = "#fff";
             ctx.font = "20px Segoe UI";
             ctx.fillText("Score: " + score, 10, 20);
         }
 
-        async function gameOver() {
+        function gameOver() {
             alive = false;
             let name = prompt("Game Over! Inserisci il tuo nome:");
             if (name) {
-                const leaderboard = await fetchLeaderboard();
-                leaderboard.push({ name, score });
-                leaderboard.sort((a,b) => b.score - a.score);
-                await updateLeaderboard(leaderboard.slice(0,10));
-                showLeaderboard();
+                saveScore(name, score);
             }
+            showLeaderboard();
         }
 
-        async function fetchLeaderboard() {
-            const res = await fetch(leaderboardUrl);
-            return await res.json();
+        function saveScore(name, score) {
+            let leaderboard = JSON.parse(localStorage.getItem("leaderboard") || "[]");
+            leaderboard.push({ name, score });
+            leaderboard.sort((a,b) => b.score - a.score);
+            localStorage.setItem("leaderboard", JSON.stringify(leaderboard.slice(0,50)));
         }
 
-        async function updateLeaderboard(data) {
-            await fetch(apiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ leaderboard: data })
-            });
-        }
+        function showLeaderboard(page = 1) {
+            let leaderboard = JSON.parse(localStorage.getItem("leaderboard") || "[]");
+            const perPage = 10;
+            const start = (page - 1) * perPage;
+            const end = start + perPage;
+            const pageData = leaderboard.slice(start, end);
 
-        async function showLeaderboard() {
-            const leaderboard = await fetchLeaderboard();
             document.getElementById('leaderboard').innerHTML =
                 "<h3>Classifica</h3>" +
-                leaderboard.map((item, i) => `<p><strong>#${i+1}</strong> ${item.name}: <span style="color:#00ff99">${item.score}</span></p>`).join('');
+                pageData.map((item, i) => `<p><strong>#${start+i+1}</strong> ${item.name}: <span style="color:#00ff99">${item.score}</span></p>`).join('');
+
+            const totalPages = Math.ceil(leaderboard.length / perPage);
+            document.querySelector('.pagination').innerHTML =
+                Array.from({length: totalPages}, (_, i) => `<button onclick="showLeaderboard(${i+1})">${i+1}</button>`).join('');
         }
 
         function gameLoop() {
             update();
             draw();
-            if (alive) {
-                setTimeout(gameLoop, 150);
-            }
+            if (alive) setTimeout(gameLoop, 150);
         }
 
         function restartGame() {
@@ -191,4 +190,3 @@
     </script>
 </body>
 </html>
-``
