@@ -159,21 +159,14 @@
             const res = await fetch(url);
             return await res.json();
         }
-
-        async function updateLeaderboard(data) {
-            const apiUrl = `https://api.github.com/repos/${githubUser}/${githubRepo}/contents/${githubPath}`;
-
-            const getRes = await fetch(apiUrl, {
-                headers: { Authorization: `Bearer ${githubToken}` }
-            });
-            const fileData = await getRes.json();
-            const sha = fileData.sha;
-
-            const payload = {
-                message: "Aggiorno classifica",
-                content: btoa(unescape(encodeURIComponent(JSON.stringify(data, null, 2)))),
-                sha: sha
-            };
+async function updateLeaderboard(data) {
+  await fetch('https://<TUO-PROGETTO>.vercel.app/api/updateLeaderboard', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ leaderboard: data })
+  });
+}
+       
 
             await fetch(apiUrl, {
                 method: "PUT",
